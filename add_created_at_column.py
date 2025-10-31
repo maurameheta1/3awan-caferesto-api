@@ -1,48 +1,21 @@
-from config.database import engine
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
-def column_exists(table_name, column_name):
-    """Cek apakah kolom sudah ada di tabel"""
-    query = text("""
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = :table_name AND column_name = :column_name
-    """)
+# ⚠️ Ganti dengan URL database PostgreSQL Railway kamu
+DATABASE_URL = "postgresql://postgres:iqTFSbEWnJCvydSLiixmeVQfwErRQfhb@shuttle.proxy.rlwy.net:57568/railway"
+
+engine = create_engine(DATABASE_URL)
+
+def seed_menu():
     with engine.connect() as conn:
-        result = conn.execute(query, {"table_name": table_name, "column_name": column_name})
-        return result.first() is not None
-
-
-def add_column_if_not_exists(table_name, column_name, column_type, default=None):
-    """Tambah kolom ke tabel jika belum ada"""
-    if not column_exists(table_name, column_name):
-        alter_query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
-        if default is not None:
-            alter_query += f" DEFAULT {default}"
-        alter_query += ";"
-        with engine.connect() as conn:
-            conn.execute(text(alter_query))
-            conn.commit()
-        print(f"✅ Kolom '{column_name}' berhasil ditambahkan ke tabel '{table_name}'")
-    else:
-        print(f"✔️ Kolom '{column_name}' sudah ada di tabel '{table_name}'")
-
-
-def sync_database():
-    print("🔄 Sinkronisasi struktur database Railway dimulai...\n")
-
-    # ================== TABLE MENUS ==================
-    add_column_if_not_exists("menus", "description", "TEXT")
-
-    # ================== TABLE ORDERS ==================
-    add_column_if_not_exists("orders", "created_at", "TIMESTAMP", "NOW()")
-
-    # ================== TABLE ORDER_ITEMS ==================
-    add_column_if_not_exists("order_items", "price", "FLOAT", "0")
-    add_column_if_not_exists("order_items", "subtotal", "FLOAT", "0")
-
-    print("\n🎯 Sinkronisasi database selesai tanpa error!\n")
-
+        conn.execute(text("""
+            INSERT INTO menus (name, price, category, description, image_url) VALUES
+            ('Nasi Goreng Spesial', 25000, 'makanan', 'Nasi goreng khas 3awan dengan topping ayam dan telur', 'https://i.imgur.com/3awan1.jpg'),
+            ('Ayam Geprek', 20000, 'makanan', 'Ayam goreng crispy dengan sambal bawang pedas', 'https://i.imgur.com/3awan2.jpg'),
+            ('Cappuccino', 18000, 'minuman', 'Kopi susu dengan aroma khas 3awan', 'https://i.imgur.com/3awan3.jpg'),
+            ('Es Teh Manis', 8000, 'minuman', 'Es teh manis segar pelepas dahaga', 'https://i.imgur.com/3awan4.jpg');
+        """))
+        conn.commit()
+        print("✅ Data contoh berhasil dimasukkan ke tabel menus!")
 
 if __name__ == "__main__":
-    sync_database()
+    seed_menu()
